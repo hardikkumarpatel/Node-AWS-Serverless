@@ -1,0 +1,60 @@
+service: account-service
+
+frameworkVersion: ">=3.0.0"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-east-1
+  environment:
+    ACCOUNT_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "*"
+
+functions:
+  accountSubmission:
+    handler: api/account.create
+    memorySize: 128
+    description: Submit account information.
+    events:
+      - http: 
+          path: accounts
+          method: post
+          cors: true
+  listAccounts:
+    handler: api/account.list
+    memorySize: 128
+    description: List all accounts
+    events:
+      - http: 
+          path: accounts
+          method: get
+          cors: true     
+
+resources:
+  Resources:
+    AccountsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "id"
+            AttributeType: "S"   
+        KeySchema:
+          -
+            AttributeName: "id"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        StreamSpecification:
+          StreamViewType: "NEW_IMAGE"
+        TableName: ${self:provider.environment.ACCOUNT_TABLE}
