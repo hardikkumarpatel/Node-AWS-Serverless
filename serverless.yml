@@ -36,7 +36,25 @@ functions:
       - http: 
           path: accounts
           method: get
-          cors: true     
+          cors: true  
+  updateAccount:
+    handler: api/account.update
+    memorySize: 128
+    description: Update account information.
+    events:
+      - http: 
+          path: accounts/{id}
+          method: put
+          cors: true   
+  deleteAccount:
+    handler: api/account.delete
+    memorySize: 128
+    description: Delete an account.
+    events:
+      - http: 
+          path: accounts/{id}
+          method: delete
+          cors: true
 
 resources:
   Resources:

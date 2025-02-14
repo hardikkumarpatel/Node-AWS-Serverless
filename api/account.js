@@ -59,6 +59,70 @@ module.exports.list = async (event, context, callback) => {
   }
 };
 
+module.exports.update = async (event, context, callback) => {
+  console.log("Received request to update account. Event is", event);
+  const id = event.pathParameters.id;
+  const requestBody = JSON.parse(event.body);
+  const role = requestBody.role;
+  const permissions = requestBody.permissions;
+
+  if (typeof role !== 'string' || typeof permissions !== 'string') {
+    console.error('Validation Failed');
+    return failureResponseBuilder(400, 'Validation errors occurred.');
+  }
+
+  const params = {
+    TableName: process.env.ACCOUNT_TABLE,
+    Key: { id },
+    UpdateExpression: 'SET #r = :role, #p = :permissions',
+    ExpressionAttributeNames: {
+      '#r': 'role',
+      '#p': 'permissions',
+    },
+    ExpressionAttributeValues: {
+      ':role': role,
+      ':permissions': permissions,
+    },
+    ReturnValues: 'UPDATED_NEW',
+  };
+
+  try {
+    const result = await dynamoDb.update(params).promise();
+    console.log(`Successfully updated account with id ${id}`);
+    return successResponseBuilder(
+      JSON.stringify({
+        message: `Successfully updated account with id ${id}`,
+        updatedAttributes: result.Attributes,
+      })
+    );
+  } catch (error) {
+    console.error('Failed to update account', error);
+    return failureResponseBuilder(500, `Unable to update account with id ${sk_id}`);
+  }
+};
+
+module.exports.delete = async (event, context, callback) => {
+  console.log("Received request to delete account. Event is", event);
+  const id = event.pathParameters.id;
+
+  const params = {
+    TableName: process.env.ACCOUNT_TABLE,
+    Key: { id },
+  };
+
+  try {
+    await dynamoDb.delete(params).promise();
+    console.log(`Successfully deleted account with id ${id}`);
+    return successResponseBuilder(
+      JSON.stringify({
+        message: `Successfully deleted account with id ${id}`,
+      })
+    );
+  } catch (error) {
+    console.error('Failed to delete account', error);
+    return failureResponseBuilder(500, `Unable to delete account with id ${id}`);
+  }
+};
 
 
 const accountInfo = (sk_id, role, permissions) => {
